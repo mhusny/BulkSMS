@@ -14,7 +14,8 @@ Public Class clsSqlConn
     Dim No As Object
 
     Shared Sub New()
-        Con = New SqlConnection("Server=UMSERVER;Database=dbKelaniya_new;User ID=sage;Password=FGT%35")
+        'Con = New SqlConnection("Server=UMSERVER;Database=dbKelaniya_new;User ID=sage;Password=FGT%35")
+        Con = New SqlConnection("Server=UMSERVER;Database=dbUdawatta_new;User ID=sage;Password=FGT%35")
     End Sub
 
     Public Overridable Function Con_Open() As Integer
@@ -96,7 +97,7 @@ Public Class clsSqlConn
             Return 0
         Finally
             Con.Close()
-            DR.Close()
+            'DR.Close()
         End Try
     End Function
 

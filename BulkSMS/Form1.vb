@@ -84,4 +84,137 @@ Public Class Form1
             'reader.Close()
         End If
     End Sub
+
+    Private Sub LinkLabel1_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
+        Dim DS As New DataSet
+        Dim sSQL As String
+        Dim objSQL As New clsSqlConn
+        With objSQL
+            sSQL = " SELECT     StkItem.StockLink FROM         StkItem INNER JOIN " & _
+                    " _etblLotTracking ON StkItem.StockLink = _etblLotTracking.iStockID INNER JOIN " & _
+                    " _etblLotTrackingQty ON _etblLotTracking.idLotTracking = _etblLotTrackingQty.iLotTrackingID " & _
+                    " WHERE     (StkItem.ItemGroup = 'FENDER LINERS') and _etblLotTrackingQty.fQtyOnHand > 0 and iWarehouseID = 2 "
+            DS = New DataSet
+            DS = .Get_Data_Sql(sSQL)
+            If DS.Tables(0).Rows.Count > 0 Then
+                Try
+                    Dim dr As DataRow
+                    .Begin_Trans()
+                    For Each dr In DS.Tables(0).Rows
+                        sSQL = " update StkItem set Qty_On_Hand = (SELECT     sum( _etblLotTrackingQty.fQtyOnHand) " & _
+                                " FROM _etblLotTracking INNER JOIN _etblLotTrackingQty ON _etblLotTracking.idLotTracking = _etblLotTrackingQty.iLotTrackingID " & _
+                                " where iStockID = " & dr.Item(0) & ") where StockLink = " & dr.Item(0) & " "
+                        sSQL = sSQL + " update WhseStk set WHQtyOnHand = (SELECT     sum( _etblLotTrackingQty.fQtyOnHand) " & _
+                                        " FROM         _etblLotTracking INNER JOIN _etblLotTrackingQty ON _etblLotTracking.idLotTracking = _etblLotTrackingQty.iLotTrackingID " & _
+                                        " where iStockID = " & dr.Item(0) & " and iWarehouseID = 2) where WHStockLink = " & dr.Item(0) & " and WHWhseID = 2 "
+                        If .Execute_Sql_Trans(sSQL) = 0 Then
+                            .Rollback_Trans()
+                            Exit Sub
+                        End If
+                    Next
+                    .Commit_Trans()
+                    'End If
+                Catch ex As Exception
+
+                End Try
+            End If
+        End With
+    End Sub
+
+    Private Sub LinkLabel2_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles LinkLabel2.LinkClicked
+        Dim DS As New DataSet
+        Dim sSQL As String
+        Dim objSQL As New clsSqlConn
+        With objSQL
+            sSQL = " SELECT     _btblInvCountLines.iStockID, sum(_btblInvCountLines.fSystemQty) as summ " & _
+                    " FROM         _btblInvCountLines INNER JOIN WhseStk ON _btblInvCountLines.iStockID = WhseStk.WHStockLink " & _
+                    " WHERE(_btblInvCountLines.iInvCountID = 97) And WhseStk.WHWhseID = 2 " & _
+                    " WHERE(_btblInvCountLines.iInvCountID = 97) And WhseStk.WHWhseID = 2 " & _
+                    " group by _btblInvCountLines.iStockID "
+            DS = New DataSet
+            DS = .Get_Data_Sql(sSQL)
+            If DS.Tables(0).Rows.Count > 0 Then
+                Try
+                    Dim dr As DataRow
+                    .Begin_Trans()
+                    For Each dr In DS.Tables(0).Rows
+                        sSQL = " update WhseStk set WHQtyOnHand = " & dr.Item(1) & " where WHStockLink = " & dr.Item(0) & " and WhseStk.WHWhseID = 2 "
+                        'sSQL = " update WhseStk set WHQtyOnHand = 0 where WHStockLink = " & dr.Item(0) & "  "
+                        If .Execute_Sql_Trans(sSQL) = 0 Then
+                            .Rollback_Trans()
+                            Exit Sub
+                        End If
+                    Next
+                    .Commit_Trans()
+
+                    .Begin_Trans()
+                    For Each dr In DS.Tables(0).Rows
+                        sSQL = " update StkItem set Qty_On_Hand = (SELECT    SUM(WhseStk.WHQtyOnHand) " & _
+                                " FROM WhseStk INNER JOIN StkItem ON WhseStk.WHStockLink = StkItem.StockLink " & _
+                                " where  WhseStk.WHStockLink = " & dr.Item(0) & ") where StockLink = " & dr.Item(0) & " "
+                        If .Execute_Sql_Trans(sSQL) = 0 Then
+                            .Rollback_Trans()
+                            Exit Sub
+                        End If
+                    Next
+                    .Commit_Trans()
+
+                    '.Begin_Trans()
+                    'For Each dr In DS.Tables(0).Rows
+                    '    sSQL = " update StkItem set Qty_On_Hand = (SELECT WhseStk.WHQtyOnHand " & _
+                    '            " FROM WhseStk INNER JOIN StkItem ON WhseStk.WHStockLink = StkItem.StockLink " & _
+                    '            " where  WhseStk.WHStockLink = " & dr.Item(0) & " and WhseStk.WHWhseID = 2) where StockLink = " & dr.Item(0) & " "
+                    '    If .Execute_Sql_Trans(sSQL) = 0 Then
+                    '        .Rollback_Trans()
+                    '        Exit Sub
+                    '    End If
+                    'Next
+                    '.Commit_Trans()
+
+                Catch ex As Exception
+                End Try
+            End If
+        End With
+    End Sub
+
+    Private Sub LinkLabel3_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles LinkLabel3.LinkClicked
+        Dim DS As New DataSet
+        Dim sSQL As String
+        Dim objSQL As New clsSqlConn
+        With objSQL
+            sSQL = " select  iStockID, max(fInclPrice) from _etblPriceListPrices group by iStockID "
+            DS = New DataSet
+            DS = .Get_Data_Sql(sSQL)
+            If DS.Tables(0).Rows.Count > 0 Then
+                Try
+                    Dim dr As DataRow
+                    .Begin_Trans()
+                    For Each dr In DS.Tables(0).Rows
+                        sSQL = "   "
+                        If .Execute_Sql_Trans(sSQL) = 0 Then
+                            .Rollback_Trans()
+                            Exit Sub
+                        End If
+                    Next
+                    .Commit_Trans()
+
+                    '.Begin_Trans()
+                    'For Each dr In DS.Tables(0).Rows
+                    '    sSQL = " update StkItem set Qty_On_Hand = (SELECT    SUM(WhseStk.WHQtyOnHand) " & _
+                    '            " FROM WhseStk INNER JOIN StkItem ON WhseStk.WHStockLink = StkItem.StockLink " & _
+                    '            " where  WhseStk.WHStockLink = " & dr.Item(0) & ") where StockLink = " & dr.Item(0) & " "
+                    '    If .Execute_Sql_Trans(sSQL) = 0 Then
+                    '        .Rollback_Trans()
+                    '        Exit Sub
+                    '    End If
+                    'Next
+                    '.Commit_Trans()
+
+                    
+
+                Catch ex As Exception
+                End Try
+            End If
+        End With
+    End Sub
 End Class
